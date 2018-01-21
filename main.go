@@ -78,17 +78,21 @@ func (plan Plan) GetAccountsLocation(accountName string) int{
 	return -1
 }
 
-func (plan *Plan) PrintOutAccounts(){
+func (plan Plan) PrintOutAccounts(){
 	for _, account := range plan.Accounts{
 		text := fmt.Sprintf("the account name is: %s, Total: %v", account.Name, account.Total)
 		fmt.Println(text)
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////
+
 type BankAccount struct{
 	Name string `json:"name"`
 	Amount string `json:"amount"`
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////
 
 type Account struct{
 	Name       string `json:"name"`
@@ -100,9 +104,60 @@ func CreateAccount(name string) Account{
 	return Account{name, 0, []Category{}}
 }
 
+func (account *Account) AddCategory(category Category){
+	account.Categories = append(account.Categories, category)
+}
+
+func (account *Account) DeleteCategory(categoryName string){
+	categoryToRemove := account.GetCategoryLocation(categoryName)
+	if categoryToRemove == -1{
+		fmt.Println("couldn't delete ", categoryName)
+		return
+	}
+	fmt.Println("hit at ", categoryToRemove)
+	if categoryToRemove == 0{
+		account.Categories = account.Categories[1:]
+	}else if categoryToRemove == len(account.Categories)-1{
+		account.Categories = account.Categories[0:len(account.Categories)-1]
+	}else{
+		account.Categories = append(account.Categories[:categoryToRemove], account.Categories[categoryToRemove+1:]...)
+	}
+}
+
+func (account Account) CheckIfCategoryExists(categoryName string) bool{
+	for _, category := range account.Categories{
+		if category.Name == categoryName{
+			return true
+		}
+	}
+	return false
+}
+
+func (account Account) GetCategoryLocation(categoryName string) int{
+	for key, category := range account.Categories{
+		if category.Name == categoryName{
+			return key
+		}
+	}
+	return -1
+}
+
+func (account Account) PrintOutACategories(){
+	for _, category := range account.Categories{
+		text := fmt.Sprintf("	the Categories name is: %s, Amount: %v", category.Name, category.Amount)
+		fmt.Println(text)
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+
 type Category struct{
 	Name string `json:"name"`
 	Amount float64 `json:"amount"`
+}
+
+func CreateCategory(name string) Category{
+	return Category{name, 0}
 }
 
 func (category *Category) UpdateAmount(amount float64){
@@ -156,8 +211,12 @@ func (plan *Plan) MainMenu(){
 	Loop:
 	for {
 		plan.PrintOutAccounts()
+		fmt.Println("")
 		fmt.Println("type add account to add a new account")
 		fmt.Println("type delete account to delete an account")
+		fmt.Println("type add category to create a category")
+		fmt.Println("type delete category to create a category")
+		fmt.Println("type print categories to print categories")
 		fmt.Println("Press c to create a plan")
 		fmt.Println("type quit to quit")
 		input := GetInput()
@@ -166,25 +225,36 @@ func (plan *Plan) MainMenu(){
 			fmt.Print("whats the name of the new account? ")
 			name := GetInput()
 			plan.AddAccount(CreateAccount(name))
+			plan.SavePlan()
 
 		case "delete account":
 			fmt.Print("what account do you want to delete? ")
 			name := GetInput()
 			plan.AddAccount(CreateAccount(name))
-
-		case "c":
-			fmt.Print("whats the name a your plan? ")
-			plan.Name = GetInput()
-			plan.FileName = plan.Name + ".json"
-			plan.Total = 0
-			plan.Accounts = []Account{}
-			plan.BankAccounts = []BankAccount{}
 			plan.SavePlan()
+
+		case "add category":
+			fmt.Print("whats the name of the account you want to add it to? ")
+			accountName := GetInput()
+			fmt.Print("whats the name a your category? ")
+			name := GetInput()
+			accountLocation := plan.GetAccountsLocation(accountName)
+			plan.Accounts[accountLocation].AddCategory(CreateCategory(name))
+			plan.Accounts[accountLocation].PrintOutACategories()
+			plan.SavePlan()
+
+		case "print categories":
+			fmt.Print("what Accounts categories do you want printed? ")
+			accountName := GetInput()
+			fmt.Println("")
+			accountLocation := plan.GetAccountsLocation(accountName)
+			plan.Accounts[accountLocation].PrintOutACategories()
+
+
 
 		case "quit":
 			break Loop
 		}
-		plan.SavePlan()
 	}
 
 
